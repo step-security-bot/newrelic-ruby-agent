@@ -411,10 +411,12 @@ module NewRelic
 
         def thread_block_with_current_transaction(*args, &block)
           current_txn = ::Thread.current[:newrelic_tracer_state].current_transaction if ::Thread.current[:newrelic_tracer_state] && ::Thread.current[:newrelic_tracer_state].is_execution_traced?
+          # outer = NewRelic::Agent::Tracer.current_segment_key
           proc do
             begin
               if current_txn
                 NewRelic::Agent::Tracer.state.current_transaction = current_txn
+                # segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Thread/#{::Fiber.current.object_id}/KEY/outer_#{outer}/parent_#{::Thread.current.nr_parent_key}/inner_#{NewRelic::Agent::Tracer.current_segment_key}")
                 segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Thread/#{::Thread.current.object_id}")
               end
               yield(*args) if block.respond_to?(:call)
@@ -422,6 +424,28 @@ module NewRelic
               segment.finish if segment
             end
           end
+        end
+
+        def fiber_block_with_current_transaction(*args, &block)
+          current_txn = ::Thread.current[:newrelic_tracer_state].current_transaction if ::Thread.current[:newrelic_tracer_state] && ::Thread.current[:newrelic_tracer_state].is_execution_traced?
+          # outer = NewRelic::Agent::Tracer.current_segment_key
+          proc do
+            begin
+              if current_txn
+                NewRelic::Agent::Tracer.state.current_transaction = current_txn
+                # segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Fiber/#{::Fiber.current.object_id}/KEY/outer_#{outer}/parent_#{::Fiber.current.nr_parent_key}/inner_#{NewRelic::Agent::Tracer.current_segment_key}")
+                segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Fiber/#{::Fiber.current.object_id}")
+              end
+              yield(*args) if block.respond_to?(:call)
+            ensure
+              segment.finish if segment
+            end
+          end
+        end
+
+        # fibers in old ruby versions work ok? Might need to do something different for old version not sure
+        def current_segment_key
+          ::Fiber.current.object_id
         end
 
         private

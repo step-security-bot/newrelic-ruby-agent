@@ -6,10 +6,10 @@ module NewRelic
   module Agent
     module Instrumentation
       module MonitoredThread
-        attr_reader :nr_parent_thread_id
+        attr_reader :nr_parent_key
 
         def initialize_with_newrelic_tracing
-          @nr_parent_thread_id = ::Thread.current.object_id
+          @nr_parent_key = NewRelic::Agent::Tracer.current_segment_key
           yield
         end
 
@@ -17,6 +17,25 @@ module NewRelic
           return block if skip_tracing?
 
           NewRelic::Agent::Tracer.thread_block_with_current_transaction(*args, &block)
+        end
+
+        def skip_tracing?
+          !NewRelic::Agent.config[:'instrumentation.thread.tracing']
+        end
+      end
+
+      module MonitoredFiber
+        attr_reader :nr_parent_key
+
+        def initialize_with_newrelic_tracing
+          @nr_parent_key = NewRelic::Agent::Tracer.current_segment_key
+          yield
+        end
+
+        def add_fiber_tracing(*args, &block)
+          return block if skip_tracing?
+
+          NewRelic::Agent::Tracer.fiber_block_with_current_transaction(*args, &block)
         end
 
         def skip_tracing?

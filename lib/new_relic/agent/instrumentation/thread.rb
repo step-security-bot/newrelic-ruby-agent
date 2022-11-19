@@ -13,6 +13,7 @@ DependencyDetection.defer do
 
     if use_prepend?
       prepend_instrument ::Thread, ::NewRelic::Agent::Instrumentation::MonitoredThread::Prepend
+      prepend_instrument ::Fiber, ::NewRelic::Agent::Instrumentation::MonitoredFiber::Prepend
     else
       chain_instrument ::NewRelic::Agent::Instrumentation::MonitoredThread::Chain
     end

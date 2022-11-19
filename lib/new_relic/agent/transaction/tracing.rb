@@ -23,6 +23,7 @@ module NewRelic
         def add_segment(segment, parent = nil)
           segment.transaction = self
           segment.parent = parent || current_segment
+          # segment.name = "#{segment.name}//////parent_name_'#{segment.parent&.name&.slice(0, 20)}'"
           set_current_segment(segment)
           if @segments.length < segment_limit
             @segments << segment
@@ -34,9 +35,15 @@ module NewRelic
         end
 
         def segment_complete(segment)
-          # if parent was in another thread, remove the current_segment entry for this thread
-          if segment.parent && segment.parent.starting_thread_id != ::Thread.current.object_id
-            remove_current_segment_by_thread_id(::Thread.current.object_id)
+          if segment.parent && segment.parent.starting_segment_key != current_segment_key
+            # its deleting things too early currently
+            # i think it's bc a fiber can complete before a thread that was nested inside of it actually starts
+            # we can't really just never delete it though, right? it would increase memory usage too much
+            # or would it? bc the segments STILL EXIST SOMEWHERE, and ruby is all about that pass by reference life
+            # or maybe we could update the agent to always pass in a parent when creating a segment to avoid the problem.
+            # thats prbly a better way to do it in general tbh
+
+            # remove_current_segment_by_thread_id(current_segment_key)
           else
             set_current_segment(segment.parent)
           end

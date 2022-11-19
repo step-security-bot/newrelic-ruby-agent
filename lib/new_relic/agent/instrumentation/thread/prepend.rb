@@ -17,6 +17,17 @@ module NewRelic
           end
         end
       end
+
+      module MonitoredFiber
+        module Prepend
+          include NewRelic::Agent::Instrumentation::MonitoredFiber
+
+          def initialize(*args, &block)
+            traced_block = add_fiber_tracing(*args, &block)
+            initialize_with_newrelic_tracing { super(*args, &traced_block) }
+          end
+        end
+      end
     end
   end
 end
