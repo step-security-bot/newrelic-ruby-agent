@@ -90,6 +90,21 @@ module NewRelic
           begin
             options = build_transaction_options(env, first_middleware)
 
+            begin
+              if %w[Middleware/Rack/ActionDispatch:SSL#call Middleware/Rack/ActionDispatch::Static#call Middleware/Rack/ActionDispatch::Routing::RouteSet#call].include?(options[:transaction_name])
+                raise 'Problematic transaction name'
+              else
+                raise 'Expected transaction name'
+              end
+            rescue => e
+              NewRelic::Agent.logger.debug("WALUIGI: MiddlewareTracing#call e.message: #{e.message}")
+              NewRelic::Agent.logger.debug("WALUIGI: MiddlewareTracing#call backtrace: #{e.backtrace.join("\n")}")
+            end
+            # Returns potential transaction name in a hash:
+            # {:transaction_name=>"Controller/Rack/Demo::Application/call"}
+            # end
+            NewRelic::Agent.logger.debug("WALUIGI: MiddlewareTracing#call: #{options[:transaction_name]}")
+
             finishable = Tracer.start_transaction_or_segment(
               name: options[:transaction_name],
               category: category,

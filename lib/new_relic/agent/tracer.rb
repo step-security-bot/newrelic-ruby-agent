@@ -133,6 +133,9 @@ module NewRelic
                                          partial_name: nil,
                                          category: nil,
                                          options: {})
+
+          NewRelic::Agent.logger.debug("WALUIGI: Tracer#start_transaction_or_segment name: #{name}; partial_name: #{partial_name}")
+
           if name.nil? && partial_name.nil?
             raise ArgumentError, 'missing required argument: name or partial_name'
           end
@@ -150,8 +153,10 @@ module NewRelic
           end
 
           if (txn = current_transaction)
+            NewRelic::Agent.logger.debug("WALUIGI: segment")
             txn.create_nested_segment(category, options)
           else
+            NewRelic::Agent.logger.debug("WALUIGI: transaction")
             Transaction.start_new_transaction(state, category, options)
           end
 

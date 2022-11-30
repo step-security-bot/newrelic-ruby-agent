@@ -48,8 +48,13 @@ module NewRelic
         end
 
         def start_transaction_or_segment(payload, request, controller_class)
+          # This is where the Rails controller action is supposed to be going
+          name = format_metric_name(payload[:action], controller_class)
+          NewRelic::Agent.logger.debug("WALUIGI: action controller subscriber name: #{name}")
+          # end customer logging code
+
           Tracer.start_transaction_or_segment(
-            name:      format_metric_name(payload[:action], controller_class),
+            name: name,
             category:  :controller,
             options:   {
               request:          request,

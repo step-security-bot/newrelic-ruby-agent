@@ -371,7 +371,13 @@ module NewRelic
         !category || nesting_max_depth == 1 || similar_category?(category)
       end
 
+      def log?
+        strings = %w[Middleware/Rack/ActionDispatch:SSL#call Middleware/Rack/ActionDispatch::Static#call Middleware/Rack/ActionDispatch::Routing::RouteSet#call]
+        strings.include?(@frozen_name) || strings.include?(@best_name) || strings.include?(@overridden_name)
+      end
+
       def best_name
+        NewRelic::Agent.logger.debug("WALUIGI: best_name; @frozen_name: #{@frozen_name}; @overridden_name: #{@overridden_name}; @default_name: #{@default_name}") if log?
         @frozen_name ||
         @overridden_name ||
         @default_name ||
