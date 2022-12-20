@@ -63,20 +63,12 @@ module NewRelic
         init_components
         init_event_handlers
         setup_attribute_filter
-        @current_txn = nil
+        @current_transaction = nil
       end
 
+      attr_writer :current_transaction
       def current_transaction
-        # is there a better place for this?
-        @current_txn
-      end
-
-      def current_transaction=(txn)
-        @current_txn = txn
-      end
-
-      def reset_current_transaction
-        @current_txn = nil
+        @current_transaction if Tracer.tracing_enabled?
       end
 
       private
@@ -301,7 +293,7 @@ module NewRelic
 
         # Clear out the metric data, errors, and transaction traces, etc.
         def drop_buffered_data
-          reset_current_transaction
+          @current_transaction = nil
           @stats_engine.reset!
           @error_collector.drop_buffered_data
           @transaction_sampler.reset!

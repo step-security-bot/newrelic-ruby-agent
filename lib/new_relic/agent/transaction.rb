@@ -119,19 +119,10 @@ module NewRelic
       end
 
       def self.start_new_transaction(state, category, options)
-        # don't let spans from previous transactions bleed into new transaction
-        # find a better to accomplish this?
-        Tracer.state.current_segment = nil
-
+        state.reset
+        
         txn = Transaction.new(category, options)
-        # state.reset(txn) # do we need to reset the rest of the state?
         NewRelic::Agent.agent.current_transaction = txn
-
-        # do we need to keep the state on the transaction as well? Why not only keep it in thread local
-        # txn.state = state
-
-        # i think this might be the only place in the code where just .start is called
-        # seems like everything might route through start_new_transaction instead
         txn.start(options)
         txn
       end
@@ -532,8 +523,7 @@ module NewRelic
         nil
       ensure
         state.reset
-        NewRelic::Agent.agent.reset_current_transaction
-        # maybe reset current span here too?
+        NewRelic::Agent.agent.current_transaction = nil
       end
 
       def user_defined_rules_ignore?

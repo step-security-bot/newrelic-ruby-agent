@@ -36,10 +36,7 @@ module NewRelic
         #
         # @api public
         def current_transaction
-          state.current_transaction
-          # using state checks whether execution is traced. do we want that?
-          # is there a better way to do that?
-          # NewRelic::Agent.current_transaction
+          NewRelic::Agent.agent.current_transaction
         end
 
         # Returns the trace_id of the current_transaction, or +nil+ if
@@ -454,9 +451,9 @@ module NewRelic
 
       # This is THE location to store thread local information during a transaction
       # Need a new piece of data? Add a method here, NOT a new thread local variable.
-      # what if  i need to store something seperatley from the state?
-      # could i combine current span into here?
       class State
+        attr_accessor :current_segment
+
         def initialize
           @untraced = []
           @record_sql = nil
@@ -469,20 +466,14 @@ module NewRelic
           # since those are managed by NewRelic::Agent.disable_* calls explicitly
           # and (more importantly) outside the scope of a transaction
 
-          # @current_segment = nil # do we need this? should we do this?
+          # should we tell the agent to reset the current txn?
+          @current_segment = nil
           @sql_sampler_transaction_data = nil
         end
 
         def current_transaction
-          # maybe this could be a way around unscoped metrics/transaction/AgentThreads issues?
-          # gotta be a better way to check this kind of thing tho
-          # i think i'd prefer to never interact with state for current txn stuff
-          return nil unless tracing_enabled?
-
-          NewRelic::Agent.agent.current_transaction
+          Tracer.current_transaction
         end
-
-        attr_accessor :current_segment
 
         # Execution tracing on current thread
         attr_accessor :untraced
