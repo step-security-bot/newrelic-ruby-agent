@@ -30,7 +30,7 @@ module NewRelic
       # find a better way to not double trace for  when thread tracing isnt behind config
       return block if NewRelic::Agent.config[:'instrumentation.thread.tracing'] # if this is on, don't double trace
 
-      NewRelic::Agent::Tracer.thread_block_with_current_transaction(*args, segment_name: 'Ruby/TracedThread', &block)
+      NewRelic::Agent::Tracer.thread_block_with_current_segment(*args, segment_name: 'Ruby/TracedThread', &block)
     end
   end
 end

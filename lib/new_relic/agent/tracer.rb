@@ -416,7 +416,7 @@ module NewRelic
 
         alias_method :tl_clear, :clear_state
 
-        def thread_block_with_current_transaction(*args, segment_name:, &block)
+        def thread_block_with_current_segment(*args, segment_name:, &block)
           current_segment = Tracer.current_segment if state.is_execution_traced?
           proc do
             begin
