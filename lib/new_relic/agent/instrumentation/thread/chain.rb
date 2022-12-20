@@ -15,10 +15,28 @@ module NewRelic::Agent::Instrumentation
 
           def initialize(*args, &block)
             traced_block = add_thread_tracing(*args, &block)
-            initialize_with_newrelic_tracing { initialize_without_new_relic(*args, &traced_block) }
+            initialize_without_new_relic(*args, &traced_block)
           end
         end
       end
     end
   end
+
+  module MonitoredFiber
+    module Chain
+      def self.instrument!
+        ::Fiber.class_eval do
+          include NewRelic::Agent::Instrumentation::MonitoredFiber
+
+          alias_method(:initialize_without_new_relic, :initialize)
+
+          def initialize(*args, &block)
+            traced_block = add_fiber_tracing(*args, &block)
+            initialize_without_new_relic(*args, &traced_block)
+          end
+        end
+      end
+    end
+  end
+
 end

@@ -13,7 +13,7 @@ module NewRelic
 
           def initialize(*args, &block)
             traced_block = add_thread_tracing(*args, &block)
-            initialize_with_newrelic_tracing { super(*args, &traced_block) }
+            super(*args, &traced_block)
           end
         end
       end
@@ -24,7 +24,7 @@ module NewRelic
 
           def initialize(*args, &block)
             traced_block = add_fiber_tracing(*args, &block)
-            initialize_with_newrelic_tracing { super(*args, &traced_block) }
+            super(*args, &traced_block)
           end
         end
       end

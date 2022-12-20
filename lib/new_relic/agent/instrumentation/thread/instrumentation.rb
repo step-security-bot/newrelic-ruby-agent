@@ -6,12 +6,6 @@ module NewRelic
   module Agent
     module Instrumentation
       module MonitoredThread
-        attr_reader :nr_parent_key
-
-        def initialize_with_newrelic_tracing
-          yield
-        end
-
         def add_thread_tracing(*args, &block)
           return block if skip_tracing?
 
@@ -24,12 +18,6 @@ module NewRelic
       end
 
       module MonitoredFiber
-        attr_reader :nr_parent_key
-
-        def initialize_with_newrelic_tracing
-          yield
-        end
-
         def add_fiber_tracing(*args, &block)
           return block if skip_tracing?
 
