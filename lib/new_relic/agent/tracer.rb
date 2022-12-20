@@ -420,8 +420,10 @@ module NewRelic
           # threads should automatically work i think, bc the thread will have, but what about when fibers are introduced?
           # parents might get weird when multiple fibers are in a thread and spawn a new thread
           #
+          seg = Tracer.current_segment if state.is_execution_traced?
           proc do
             begin
+              state.set_current_segment(seg) if seg
               segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Thread/#{::Thread.current.object_id}")
               yield(*args) if block.respond_to?(:call)
             ensure
@@ -432,8 +434,10 @@ module NewRelic
 
         def fiber_block_with_current_transaction(*args, &block)
           # do fibers need to do something different for passing on current seg?
+          seg = Tracer.current_segment if state.is_execution_traced?
           proc do
             begin
+              state.set_current_segment(seg) if seg
               segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Fiber/#{::Fiber.current.object_id}")
               yield(*args) if block.respond_to?(:call)
             ensure
@@ -496,34 +500,39 @@ module NewRelic
           NewRelic::Agent.agent.current_transaction
         end
 
-        @context_key = :newrelic_current_span
+        CONTEXT_KEY = :newrelic_current_span2
 
         def current_segment
           # return unless current_transaction # ?
 
-          local_context[:newrelic_current_span] || parent_segment
-          # local_context[@context_key] || parent_segment
-          # (local_context[:newrelic_current_span] || parent_segment)
-
+          @current_segment
           # @current_segment || parent_segment
+          # local_context[CONTEXT_KEY] || parent_segment
+
+        end
+
+        def current_segment=(new_segment)
+          @current_segment = new_segment
         end
 
         def parent_segment
-          local_context(parent_segment_key)[:newrelic_current_span]
-          # local_context(parent_segment_key)[@context_key]
-          # Tracer.state_for(ObjectSpace._id2ref(id)).current_segment
+          return unless parent = local_context(parent_segment_key)[:newrelic_tracer_state]
+          parent.current_segment
+          # local_context(parent_segment_key)[CONTEXT_KEY]
+
+        # rescue => e
+        #   puts "\n****************************************************************\n#{e}\n****************************************************************\n"
         end
 
+
         def set_current_segment(new_segment)
-          local_context[:newrelic_current_span] = new_segment
-          # local_context[@context_key] = new_segment
-          # @current_segment = new_segment
+          # local_context[CONTEXT_KEY] = new_segment
+          @current_segment = new_segment
         end
 
         def reset_current_segment
-          # local_context[:newrelic_current_span] = nil
           set_current_segment(nil)
-          # local_context[@context_key] = new_segment
+          # current_segment = nil
         end
 
         def local_context(id = nil)
