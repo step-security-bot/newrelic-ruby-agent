@@ -368,6 +368,8 @@ module NewRelic::Agent::Instrumentation
 
         def doit
           perform_action_with_newrelic_trace do
+            # intermittently failing, current txn is nil?
+            # TESTOPTS='--seed=19104' bert
             NewRelic::Agent::Tracer.current_transaction.request_path
           end
         end

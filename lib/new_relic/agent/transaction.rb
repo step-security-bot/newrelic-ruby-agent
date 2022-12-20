@@ -257,7 +257,6 @@ module NewRelic
         @priority = nil
 
         @starting_thread_id = Thread.current.object_id
-        @starting_segment_key = Tracer.current_segment_key
 
         @attributes = Attributes.new(NewRelic::Agent.instance.attribute_filter)
 

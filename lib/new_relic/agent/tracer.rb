@@ -446,11 +446,6 @@ module NewRelic
           end
         end
 
-        # fibers in old ruby versions work ok? Might need to do something different for old version not sure
-        def current_segment_key
-          state.current_segment_key
-        end
-
         private
 
         def start_and_add_segment(segment, parent = nil)
@@ -488,6 +483,7 @@ module NewRelic
           # since those are managed by NewRelic::Agent.disable_* calls explicitly
           # and (more importantly) outside the scope of a transaction
 
+          # @current_segment = nil # do we need this? should we do this?
           @sql_sampler_transaction_data = nil
         end
 
@@ -500,56 +496,24 @@ module NewRelic
           NewRelic::Agent.agent.current_transaction
         end
 
-        CONTEXT_KEY = :newrelic_current_span2
-
         def current_segment
           # return unless current_transaction # ?
 
           @current_segment
-          # @current_segment || parent_segment
-          # local_context[CONTEXT_KEY] || parent_segment
-
         end
 
         def current_segment=(new_segment)
           @current_segment = new_segment
         end
 
-        def parent_segment
-          return unless parent = local_context(parent_segment_key)[:newrelic_tracer_state]
-          parent.current_segment
-          # local_context(parent_segment_key)[CONTEXT_KEY]
-
-        # rescue => e
-        #   puts "\n****************************************************************\n#{e}\n****************************************************************\n"
-        end
-
-
         def set_current_segment(new_segment)
-          # local_context[CONTEXT_KEY] = new_segment
           @current_segment = new_segment
+          # current_segment = new_segment
         end
 
         def reset_current_segment
           set_current_segment(nil)
           # current_segment = nil
-        end
-
-        def local_context(id = nil)
-          return ::Thread.current unless id
-
-          # what is perf impact of using objects space?
-          # also what else could go wrong here? what if object doesn't exist anymore
-          ObjectSpace._id2ref(id)
-        end
-
-        # fibers in old ruby versions work ok? Might need to do something different for old version not sure
-        def current_segment_key
-          ::Thread.current.object_id
-        end
-
-        def parent_segment_key
-          (::Thread.current.nr_parent_key if ::Thread.current.respond_to?(:nr_parent_key))
         end
 
         # Execution tracing on current thread

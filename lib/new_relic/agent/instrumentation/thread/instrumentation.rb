@@ -9,7 +9,6 @@ module NewRelic
         attr_reader :nr_parent_key
 
         def initialize_with_newrelic_tracing
-          @nr_parent_key = NewRelic::Agent::Tracer.current_segment_key
           yield
         end
 
@@ -28,7 +27,6 @@ module NewRelic
         attr_reader :nr_parent_key
 
         def initialize_with_newrelic_tracing
-          @nr_parent_key = NewRelic::Agent::Tracer.current_segment_key
           yield
         end
 

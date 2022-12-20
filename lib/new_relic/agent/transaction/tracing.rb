@@ -35,21 +35,7 @@ module NewRelic
         end
 
         def segment_complete(segment)
-          if segment.parent && segment.parent.starting_segment_key != Tracer.current_segment_key
-            # if leaving fiber/thread, do we even need to do anything?
-
-            # WHAT DOES THIS MEAN FOR WHEN STORING SPANS ON THREAD LOCAL
-            # its deleting things too early currently
-            # i think it's bc a fiber can complete before a thread that was nested inside of it actually starts
-            # we can't really just never delete it though, right? it would increase memory usage too much
-            # or would it? bc the segments STILL EXIST SOMEWHERE, and ruby is all about that pass by reference life
-            # or maybe we could update the agent to always pass in a parent when creating a segment to avoid the problem.
-            # thats prbly a better way to do it in general tbh
-
-            # remove_current_segment_by_thread_id(current_segment_key)
-          else
-            set_current_segment(segment.parent)
-          end
+          set_current_segment(segment.parent)
         end
 
         def segment_limit
