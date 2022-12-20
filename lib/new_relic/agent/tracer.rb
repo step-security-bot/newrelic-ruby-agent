@@ -417,10 +417,10 @@ module NewRelic
         alias_method :tl_clear, :clear_state
 
         def thread_block_with_current_segment(*args, segment_name:, &block)
-          current_segment = Tracer.current_segment if state.is_execution_traced?
+          current_segment = state.current_segment if state.is_execution_traced?
           proc do
             begin
-              state.set_current_segment(current_segment) if current_segment
+              state.current_segment = current_segment if current_segment
 
               segment = NewRelic::Agent::Tracer.start_segment(name: segment_name)
               NewRelic::Agent::Tracer.capture_segment_error(segment) do
@@ -482,25 +482,7 @@ module NewRelic
           NewRelic::Agent.agent.current_transaction
         end
 
-        def current_segment
-          # return unless current_transaction # ?
-
-          @current_segment
-        end
-
-        def current_segment=(new_segment)
-          @current_segment = new_segment
-        end
-
-        def set_current_segment(new_segment)
-          @current_segment = new_segment
-          # current_segment = new_segment
-        end
-
-        def reset_current_segment
-          set_current_segment(nil)
-          # current_segment = nil
-        end
+        attr_accessor :current_segment
 
         # Execution tracing on current thread
         attr_accessor :untraced

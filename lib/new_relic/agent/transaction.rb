@@ -120,9 +120,8 @@ module NewRelic
 
       def self.start_new_transaction(state, category, options)
         # don't let spans from previous transactions bleed into new transaction
-        # find a better to accomplish this
-        # Thread.current[:newrelic_current_span] = nil
-        Tracer.state.reset_current_segment
+        # find a better to accomplish this?
+        Tracer.state.current_segment = nil
 
         txn = Transaction.new(category, options)
         # state.reset(txn) # do we need to reset the rest of the state?
@@ -275,10 +274,6 @@ module NewRelic
 
       def current_segment
         state.current_segment
-      end
-
-      def set_current_segment(new_segment)
-        state.set_current_segment(new_segment)
       end
 
       def distributed_tracer

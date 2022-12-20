@@ -23,7 +23,6 @@ module NewRelic
         def add_segment(segment, parent = nil)
           segment.transaction = self
           segment.parent = parent || current_segment
-          # segment.name = "#{segment.name}//////parent_name_'#{segment.parent&.name&.slice(0, 20)}'"
           set_current_segment(segment)
           if @segments.length < segment_limit
             @segments << segment
@@ -36,6 +35,10 @@ module NewRelic
 
         def segment_complete(segment)
           set_current_segment(segment.parent)
+        end
+
+        def set_current_segment(segment)
+          state.current_segment = segment
         end
 
         def segment_limit
