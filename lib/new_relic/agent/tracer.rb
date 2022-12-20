@@ -203,13 +203,7 @@ module NewRelic
         #
         # @api public
         def current_segment
-          # state.currrent_segment # just calling this causes a bunch of failures
-
-          # if txnless, this would be bad, maybe we could be getting the current segment from the state instead?
-          return unless txn = current_transaction
-
           state.current_segment
-          # txn.current_segment
         end
 
         # Creates and starts a general-purpose segment used to time
@@ -452,8 +446,6 @@ module NewRelic
       # This is THE location to store thread local information during a transaction
       # Need a new piece of data? Add a method here, NOT a new thread local variable.
       class State
-        attr_accessor :current_segment
-
         def initialize
           @untraced = []
           @record_sql = nil
@@ -469,6 +461,11 @@ module NewRelic
           # should we tell the agent to reset the current txn?
           @current_segment = nil
           @sql_sampler_transaction_data = nil
+        end
+
+        attr_writer :current_segment
+        def current_segment
+          @current_segment if current_transaction
         end
 
         def current_transaction
