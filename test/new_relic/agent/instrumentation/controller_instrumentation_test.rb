@@ -71,6 +71,7 @@ module NewRelic::Agent::Instrumentation
       #   All specs in there were: [
       #     Supportability/API/disable_all_tracing (<unscoped>)
       #   ]
+      # TESTOPTS='--seed=42221' bert
       assert_metrics_recorded("Apdex")
     end
 

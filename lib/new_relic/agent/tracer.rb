@@ -416,30 +416,16 @@ module NewRelic
 
         alias_method :tl_clear, :clear_state
 
-        def thread_block_with_current_transaction(*args, &block)
-          # threads should automatically work i think, bc the thread will have, but what about when fibers are introduced?
-          # parents might get weird when multiple fibers are in a thread and spawn a new thread
-          #
-          seg = Tracer.current_segment if state.is_execution_traced?
+        def thread_block_with_current_transaction(*args, segment_name:, &block)
+          current_segment = Tracer.current_segment if state.is_execution_traced?
           proc do
             begin
-              state.set_current_segment(seg) if seg
-              segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Thread/#{::Thread.current.object_id}")
-              yield(*args) if block.respond_to?(:call)
-            ensure
-              segment.finish if segment
-            end
-          end
-        end
+              state.set_current_segment(current_segment) if current_segment
 
-        def fiber_block_with_current_transaction(*args, &block)
-          # do fibers need to do something different for passing on current seg?
-          seg = Tracer.current_segment if state.is_execution_traced?
-          proc do
-            begin
-              state.set_current_segment(seg) if seg
-              segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Fiber/#{::Fiber.current.object_id}")
-              yield(*args) if block.respond_to?(:call)
+              segment = NewRelic::Agent::Tracer.start_segment(name: segment_name)
+              NewRelic::Agent::Tracer.capture_segment_error(segment) do
+                yield(*args) if block.respond_to?(:call)
+              end
             ensure
               segment.finish if segment
             end
