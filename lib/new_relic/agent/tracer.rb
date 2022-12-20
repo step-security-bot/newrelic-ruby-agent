@@ -408,10 +408,10 @@ module NewRelic
         alias_method :tl_clear, :clear_state
 
         def thread_block_with_current_segment(*args, segment_name:, &block)
-          current_segment = state.current_segment if state.is_execution_traced?
+          parent_segment = current_segment if tracing_enabled?
           proc do
             begin
-              state.current_segment = current_segment if current_segment
+              state.current_segment = parent_segment if parent_segment
 
               segment = NewRelic::Agent::Tracer.start_segment(name: segment_name)
               NewRelic::Agent::Tracer.capture_segment_error(segment) do
@@ -452,13 +452,11 @@ module NewRelic
           @current_segment = nil
         end
 
-        # This starts the timer for the transaction.
         def reset
           # We purposefully don't reset @untraced or @record_sql
           # since those are managed by NewRelic::Agent.disable_* calls explicitly
           # and (more importantly) outside the scope of a transaction
 
-          # should we tell the agent to reset the current txn?
           @current_segment = nil
           @sql_sampler_transaction_data = nil
         end
@@ -469,7 +467,7 @@ module NewRelic
         end
 
         def current_transaction
-          Tracer.current_transaction
+          NewRelic::Agent.agent.current_transaction
         end
 
         # Execution tracing on current thread
