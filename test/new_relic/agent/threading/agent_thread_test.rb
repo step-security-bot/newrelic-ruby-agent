@@ -166,17 +166,15 @@ module NewRelic::Agent::Threading
     end
 
     def test_agent_thread_creation_ignores_current_transaction
-      with_config(:'instrumentation.thread.tracing' => true) do
-        in_transaction do |txn|
-          t = AgentThread.create("label") do
-            # oh interesting, what about unscoped metrics unrelated, could cause previous bug with them missing
-            # maybe agent threads should do some kind of othere interesting thing to not have that problem
-            # binding.irb
-            refute NewRelic::Agent::Tracer.state.current_transaction, "Agent thread should not contain a current transaction"
-            # refute ::Thread.current[:newrelic_tracer_state] && ::Thread.current[:newrelic_tracer_state].current_transaction, "Agent thread should not contain a current transaction"
-          end
-          t.join
+      in_transaction do |txn|
+        t = AgentThread.create("label") do
+          # oh interesting, what about unscoped metrics unrelated, could cause previous bug with them missing
+          # maybe agent threads should do some kind of othere interesting thing to not have that problem
+          # binding.irb
+          refute NewRelic::Agent::Tracer.state.current_transaction, "Agent thread should not contain a current transaction"
+          # refute ::Thread.current[:newrelic_tracer_state] && ::Thread.current[:newrelic_tracer_state].current_transaction, "Agent thread should not contain a current transaction"
         end
+        t.join
       end
     end
 

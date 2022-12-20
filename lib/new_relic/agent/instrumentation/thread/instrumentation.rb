@@ -7,16 +7,12 @@ module NewRelic
     module Instrumentation
       module MonitoredThread
         def add_thread_tracing(*args, &block)
-          return block if !NewRelic::Agent.config[:'instrumentation.thread.tracing']
-
           NewRelic::Agent::Tracer.thread_block_with_current_segment(*args, segment_name: 'Ruby/Thread', &block)
         end
       end
 
       module MonitoredFiber
         def add_fiber_tracing(*args, &block)
-          return block if !NewRelic::Agent.config[:'instrumentation.thread.tracing']
-
           NewRelic::Agent::Tracer.thread_block_with_current_segment(*args, segment_name: 'Ruby/Fiber', &block)
         end
       end

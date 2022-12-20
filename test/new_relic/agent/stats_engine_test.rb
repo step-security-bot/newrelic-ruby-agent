@@ -193,18 +193,16 @@ class NewRelic::Agent::StatsEngineTest < Minitest::Test
     nthreads = 25
     iterations = 100
 
-    with_config(:'instrumentation.thread.tracing' => false) do
-      nthreads.times do |tid|
-        threads << Thread.new do
-          iterations.times do
-            in_transaction('txn') do
-              @engine.tl_record_scoped_and_unscoped_metrics('m1', ['m3'], 1)
-              @engine.tl_record_scoped_and_unscoped_metrics('m2', ['m4'], 1)
-            end
+    nthreads.times do |tid|
+      threads << Thread.new do
+        iterations.times do
+          in_transaction('txn') do
+            @engine.tl_record_scoped_and_unscoped_metrics('m1', ['m3'], 1)
+            @engine.tl_record_scoped_and_unscoped_metrics('m2', ['m4'], 1)
           end
         end
-        threads.each { |t| t.join }
       end
+      threads.each { |t| t.join }
     end
 
     expected = {:call_count => nthreads * iterations}
@@ -224,18 +222,16 @@ class NewRelic::Agent::StatsEngineTest < Minitest::Test
     nthreads = 25
     iterations = 100
 
-    with_config(:'instrumentation.thread.tracing' => true) do
-      in_transaction('txn') do
-        nthreads.times do |tid|
-          threads << Thread.new do
-            iterations.times do
-              @engine.tl_record_scoped_and_unscoped_metrics('m1', ['m3'], 1)
-              @engine.tl_record_scoped_and_unscoped_metrics('m2', ['m4'], 1)
-            end
+    in_transaction('txn') do
+      nthreads.times do |tid|
+        threads << Thread.new do
+          iterations.times do
+            @engine.tl_record_scoped_and_unscoped_metrics('m1', ['m3'], 1)
+            @engine.tl_record_scoped_and_unscoped_metrics('m2', ['m4'], 1)
           end
         end
-        threads.each { |t| t.join }
       end
+      threads.each { |t| t.join }
     end
 
     expected = {:call_count => nthreads * iterations}
