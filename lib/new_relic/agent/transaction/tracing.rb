@@ -35,7 +35,7 @@ module NewRelic
         end
 
         def segment_complete(segment)
-          if segment.parent && segment.parent.starting_segment_key != current_segment_key
+          if segment.parent && segment.parent.starting_segment_key != Tracer.current_segment_key
             # if leaving fiber/thread, do we even need to do anything?
 
             # WHAT DOES THIS MEAN FOR WHEN STORING SPANS ON THREAD LOCAL

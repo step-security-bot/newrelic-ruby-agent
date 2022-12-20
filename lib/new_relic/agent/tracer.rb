@@ -206,9 +206,13 @@ module NewRelic
         #
         # @api public
         def current_segment
+          # state.currrent_segment # just calling this causes a bunch of failures
+
+          # if txnless, this would be bad, maybe we could be getting the current segment from the state instead?
           return unless txn = current_transaction
 
-          txn.current_segment
+          state.current_segment
+          # txn.current_segment
         end
 
         # Creates and starts a general-purpose segment used to time
@@ -413,6 +417,9 @@ module NewRelic
         alias_method :tl_clear, :clear_state
 
         def thread_block_with_current_transaction(*args, &block)
+          # threads should automatically work i think, bc the thread will have, but what about when fibers are introduced?
+          # parents might get weird when multiple fibers are in a thread and spawn a new thread
+          #
           proc do
             begin
               segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Thread/#{::Thread.current.object_id}")
@@ -424,6 +431,7 @@ module NewRelic
         end
 
         def fiber_block_with_current_transaction(*args, &block)
+          # do fibers need to do something different for passing on current seg?
           proc do
             begin
               segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Fiber/#{::Fiber.current.object_id}")
@@ -436,7 +444,7 @@ module NewRelic
 
         # fibers in old ruby versions work ok? Might need to do something different for old version not sure
         def current_segment_key
-          ::Thread.current.object_id
+          state.current_segment_key
         end
 
         private
@@ -467,6 +475,7 @@ module NewRelic
         def initialize
           @untraced = []
           @record_sql = nil
+          @current_segment = nil
         end
 
         # This starts the timer for the transaction.
@@ -485,6 +494,53 @@ module NewRelic
           return nil unless tracing_enabled?
 
           NewRelic::Agent.agent.current_transaction
+        end
+
+        @context_key = :newrelic_current_span
+
+        def current_segment
+          # return unless current_transaction # ?
+
+          local_context[:newrelic_current_span] || parent_segment
+          # local_context[@context_key] || parent_segment
+          # (local_context[:newrelic_current_span] || parent_segment)
+
+          # @current_segment || parent_segment
+        end
+
+        def parent_segment
+          local_context(parent_segment_key)[:newrelic_current_span]
+          # local_context(parent_segment_key)[@context_key]
+          # Tracer.state_for(ObjectSpace._id2ref(id)).current_segment
+        end
+
+        def set_current_segment(new_segment)
+          local_context[:newrelic_current_span] = new_segment
+          # local_context[@context_key] = new_segment
+          # @current_segment = new_segment
+        end
+
+        def reset_current_segment
+          # local_context[:newrelic_current_span] = nil
+          set_current_segment(nil)
+          # local_context[@context_key] = new_segment
+        end
+
+        def local_context(id = nil)
+          return ::Thread.current unless id
+
+          # what is perf impact of using objects space?
+          # also what else could go wrong here? what if object doesn't exist anymore
+          ObjectSpace._id2ref(id)
+        end
+
+        # fibers in old ruby versions work ok? Might need to do something different for old version not sure
+        def current_segment_key
+          ::Thread.current.object_id
+        end
+
+        def parent_segment_key
+          (::Thread.current.nr_parent_key if ::Thread.current.respond_to?(:nr_parent_key))
         end
 
         # Execution tracing on current thread

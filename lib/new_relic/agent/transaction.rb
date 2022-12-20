@@ -121,14 +121,15 @@ module NewRelic
       def self.start_new_transaction(state, category, options)
         # don't let spans from previous transactions bleed into new transaction
         # find a better to accomplish this
-        Thread.current[:newrelic_current_span] = nil
+        # Thread.current[:newrelic_current_span] = nil
+        Tracer.state.reset_current_segment
 
         txn = Transaction.new(category, options)
         # state.reset(txn) # do we need to reset the rest of the state?
         NewRelic::Agent.agent.current_transaction = txn
 
         # do we need to keep the state on the transaction as well? Why not only keep it in thread local
-        txn.state = state
+        # txn.state = state
 
         # i think this might be the only place in the code where just .start is called
         # seems like everything might route through start_new_transaction instead
@@ -256,7 +257,7 @@ module NewRelic
         @priority = nil
 
         @starting_thread_id = Thread.current.object_id
-        @starting_segment_key = current_segment_key
+        @starting_segment_key = Tracer.current_segment_key
 
         @attributes = Attributes.new(NewRelic::Agent.instance.attribute_filter)
 
@@ -269,40 +270,16 @@ module NewRelic
         end
       end
 
-      def current_segment_key
-        Tracer.current_segment_key
-      end
-
-      def parent_segment_key
-        (::Thread.current.nr_parent_key if ::Thread.current.respond_to?(:nr_parent_key))
+      def state
+        NewRelic::Agent::Tracer.state
       end
 
       def current_segment
-        # is the || necessary? yes i think, because what happens when creating a new thread?
-        # would need to get parent from thread
-        # what about fibers? cants [] on fiber, so maybe we'd need a hash in the thread context for fibers? blegh
-        local_context[:newrelic_current_span] || local_context(parent_segment_key)[:newrelic_current_span]
-
-        # return current_segment_by_thread[current_segment_key] if current_segment_by_thread[current_segment_key]
-        # return current_segment_by_thread[parent_segment_key] if current_segment_by_thread[parent_segment_key]
-        # current_segment_by_thread[@starting_segment_key]
-      end
-
-      def local_context(id = nil)
-        return ::Thread.current unless id
-
-        # what is perf impact of using objects space?
-        # also what else could go wrong here? what if object doesn't exist anymore
-        ObjectSpace._id2ref(id)
+        state.current_segment
       end
 
       def set_current_segment(new_segment)
-        local_context[:newrelic_current_span] = new_segment
-      end
-
-      def remove_current_segment_by_thread_id(id)
-        # do we even need this?
-        # @current_segment_lock.synchronize { current_segment_by_thread.delete(id) }
+        state.set_current_segment(new_segment)
       end
 
       def distributed_tracer
