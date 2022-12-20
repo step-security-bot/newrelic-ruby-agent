@@ -36,6 +36,9 @@ module NewRelic
 
         def segment_complete(segment)
           if segment.parent && segment.parent.starting_segment_key != current_segment_key
+            # if leaving fiber/thread, do we even need to do anything?
+
+            # WHAT DOES THIS MEAN FOR WHEN STORING SPANS ON THREAD LOCAL
             # its deleting things too early currently
             # i think it's bc a fiber can complete before a thread that was nested inside of it actually starts
             # we can't really just never delete it though, right? it would increase memory usage too much

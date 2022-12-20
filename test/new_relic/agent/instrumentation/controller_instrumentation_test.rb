@@ -66,6 +66,11 @@ module NewRelic::Agent::Instrumentation
     def test_apdex_recorded
       @object.public_transaction
 
+      # seeing an intermittent failure? is AgentThread doing something weird to interfere?
+      #   Did not find stats for spec #<NewRelic::MetricSpec 'Apdex':''>.
+      #   All specs in there were: [
+      #     Supportability/API/disable_all_tracing (<unscoped>)
+      #   ]
       assert_metrics_recorded("Apdex")
     end
 

@@ -8,7 +8,7 @@ module NewRelic
   module Agent
     class TracerTest < Minitest::Test
       def teardown
-        NewRelic::Agent.instance.drop_buffered_data
+        NewRelic::Agent.drop_buffered_data
       end
 
       def test_tracer_aliases

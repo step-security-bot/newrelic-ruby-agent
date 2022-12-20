@@ -37,6 +37,9 @@ module NewRelic
         # @api public
         def current_transaction
           state.current_transaction
+          # using state checks whether execution is traced. do we want that?
+          # is there a better way to do that?
+          # NewRelic::Agent.current_transaction
         end
 
         # Returns the trace_id of the current_transaction, or +nil+ if
@@ -410,15 +413,9 @@ module NewRelic
         alias_method :tl_clear, :clear_state
 
         def thread_block_with_current_transaction(*args, &block)
-          current_txn = ::Thread.current[:newrelic_tracer_state].current_transaction if ::Thread.current[:newrelic_tracer_state] && ::Thread.current[:newrelic_tracer_state].is_execution_traced?
-          # outer = NewRelic::Agent::Tracer.current_segment_key
           proc do
             begin
-              if current_txn
-                NewRelic::Agent::Tracer.state.current_transaction = current_txn
-                # segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Thread/#{::Fiber.current.object_id}/KEY/outer_#{outer}/parent_#{::Thread.current.nr_parent_key}/inner_#{NewRelic::Agent::Tracer.current_segment_key}")
-                segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Thread/#{::Thread.current.object_id}")
-              end
+              segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Thread/#{::Thread.current.object_id}")
               yield(*args) if block.respond_to?(:call)
             ensure
               segment.finish if segment
@@ -427,15 +424,9 @@ module NewRelic
         end
 
         def fiber_block_with_current_transaction(*args, &block)
-          current_txn = ::Thread.current[:newrelic_tracer_state].current_transaction if ::Thread.current[:newrelic_tracer_state] && ::Thread.current[:newrelic_tracer_state].is_execution_traced?
-          # outer = NewRelic::Agent::Tracer.current_segment_key
           proc do
             begin
-              if current_txn
-                NewRelic::Agent::Tracer.state.current_transaction = current_txn
-                # segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Fiber/#{::Fiber.current.object_id}/KEY/outer_#{outer}/parent_#{::Fiber.current.nr_parent_key}/inner_#{NewRelic::Agent::Tracer.current_segment_key}")
-                segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Fiber/#{::Fiber.current.object_id}")
-              end
+              segment = NewRelic::Agent::Tracer.start_segment(name: "Ruby/Fiber/#{::Fiber.current.object_id}")
               yield(*args) if block.respond_to?(:call)
             ensure
               segment.finish if segment
@@ -445,7 +436,7 @@ module NewRelic
 
         # fibers in old ruby versions work ok? Might need to do something different for old version not sure
         def current_segment_key
-          ::Fiber.current.object_id
+          ::Thread.current.object_id
         end
 
         private
@@ -470,25 +461,31 @@ module NewRelic
 
       # This is THE location to store thread local information during a transaction
       # Need a new piece of data? Add a method here, NOT a new thread local variable.
+      # what if  i need to store something seperatley from the state?
+      # could i combine current span into here?
       class State
         def initialize
           @untraced = []
-          @current_transaction = nil
           @record_sql = nil
         end
 
         # This starts the timer for the transaction.
-        def reset(transaction = nil)
+        def reset
           # We purposefully don't reset @untraced or @record_sql
           # since those are managed by NewRelic::Agent.disable_* calls explicitly
           # and (more importantly) outside the scope of a transaction
 
-          @current_transaction = transaction
           @sql_sampler_transaction_data = nil
         end
 
-        # Current transaction stack
-        attr_accessor :current_transaction
+        def current_transaction
+          # maybe this could be a way around unscoped metrics/transaction/AgentThreads issues?
+          # gotta be a better way to check this kind of thing tho
+          # i think i'd prefer to never interact with state for current txn stuff
+          return nil unless tracing_enabled?
+
+          NewRelic::Agent.agent.current_transaction
+        end
 
         # Execution tracing on current thread
         attr_accessor :untraced

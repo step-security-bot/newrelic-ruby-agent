@@ -9,19 +9,22 @@ module NewRelic
         def self.create(label, &blk)
           ::NewRelic::Agent.logger.debug("Creating AgentThread: #{label}")
           wrapped_blk = proc do
-            if ::Thread.current[:newrelic_tracer_state] && Thread.current[:newrelic_tracer_state].current_transaction
-              txn = ::Thread.current[:newrelic_tracer_state].current_transaction
-              ::NewRelic::Agent.logger.warn("AgentThread created with current transaction #{txn.best_name}")
-            end
-            begin
-              yield
-            rescue => e
-              ::NewRelic::Agent.logger.error("AgentThread #{label} exited with error", e)
-            rescue Exception => e
-              ::NewRelic::Agent.logger.error("AgentThread #{label} exited with exception. Re-raising in case of interrupt.", e)
-              raise
-            ensure
-              ::NewRelic::Agent.logger.debug("Exiting AgentThread: #{label}")
+            # why do we need two disable_all_tracings hmm
+            NewRelic::Agent.disable_all_tracing do
+              if ::Thread.current[:newrelic_tracer_state] && Thread.current[:newrelic_tracer_state].current_transaction
+                txn = ::Thread.current[:newrelic_tracer_state].current_transaction
+                ::NewRelic::Agent.logger.warn("AgentThread created with current transaction #{txn.best_name}")
+              end
+              begin
+                yield
+              rescue => e
+                ::NewRelic::Agent.logger.error("AgentThread #{label} exited with error", e)
+              rescue Exception => e
+                ::NewRelic::Agent.logger.error("AgentThread #{label} exited with exception. Re-raising in case of interrupt.", e)
+                raise
+              ensure
+                ::NewRelic::Agent.logger.debug("Exiting AgentThread: #{label}")
+              end
             end
           end
           thread = nil

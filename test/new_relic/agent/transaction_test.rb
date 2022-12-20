@@ -16,6 +16,7 @@ module NewRelic::Agent
       # Failed transactions can leave partial stack, so pave it for next test
 
       ::NewRelic::Agent.logger.clear_already_logged
+      NewRelic::Agent.drop_buffered_data
       cleanup_transaction
     end
 
