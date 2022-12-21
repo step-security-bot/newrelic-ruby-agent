@@ -408,10 +408,15 @@ module NewRelic
         alias_method :tl_clear, :clear_state
 
         def thread_block_with_current_segment(*args, segment_name:, &block)
-          parent_segment = current_segment if tracing_enabled?
+          parent_segment = current_segment
+          parent_untraced = !tracing_enabled?
+
           proc do
             begin
-              state.current_segment = parent_segment if parent_segment
+              # This allows the agent to carry over whether or not
+              # this thread was created in a disable_all_tracing block
+              state.push_traced(false) if parent_untraced
+              state.current_segment = parent_segment if parent_segment && tracing_enabled?
 
               segment = NewRelic::Agent::Tracer.start_segment(name: segment_name)
               NewRelic::Agent::Tracer.capture_segment_error(segment) do
@@ -419,6 +424,7 @@ module NewRelic
               end
             ensure
               segment.finish if segment
+              state.pop_traced if parent_untraced
             end
           end
         end
