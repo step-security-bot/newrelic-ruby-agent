@@ -560,16 +560,27 @@ module NewRelic
         @duration = @end_time - @start_time
         freeze_name_and_execute_if_not_ignored
 
+        NewRelic::Agent.logger.debug("#{Thread.current.object_id} WALUIGI Transaction#finish middle 1   guid: #{guid}")
+
         if nesting_max_depth == 1
           initial_segment.name = @frozen_name
         end
+        NewRelic::Agent.logger.debug("#{Thread.current.object_id} WALUIGI Transaction#finish middle 2   guid: #{guid}")
 
         initial_segment.transaction_name = @frozen_name
+        NewRelic::Agent.logger.debug("#{Thread.current.object_id} WALUIGI Transaction#finish middle 3   guid: #{guid}")
         assign_segment_dt_attributes
+        NewRelic::Agent.logger.debug("#{Thread.current.object_id} WALUIGI Transaction#finish middle 4   guid: #{guid}")
+
         assign_agent_attributes
+        NewRelic::Agent.logger.debug("#{Thread.current.object_id} WALUIGI Transaction#finish middle 5   guid: #{guid}")
+
         initial_segment.finish
 
+        NewRelic::Agent.logger.debug("#{Thread.current.object_id} WALUIGI Transaction#finish middle 6   guid: #{guid}")
+
         NewRelic::Agent::TransactionTimeAggregator.transaction_stop(@end_time, @starting_thread_id)
+        NewRelic::Agent.logger.debug("#{Thread.current.object_id} WALUIGI Transaction#finish middle 7   guid: #{guid}")
 
         unless @ignore_this_transaction
           begin
@@ -616,17 +627,22 @@ module NewRelic
 
         generate_payload
         assign_intrinsics
+        NewRelic::Agent.logger.debug("#{Thread.current.object_id} WALUIGI Transaction#commit! middle 1   guid: #{guid}")
 
         finalize_segments
 
         @transaction_trace = transaction_sampler.on_finishing_transaction(self)
         sql_sampler.on_finishing_transaction(state, @frozen_name)
 
+        NewRelic::Agent.logger.debug("#{Thread.current.object_id} WALUIGI Transaction#finish middle 2   guid: #{guid}")
+
         record_summary_metrics(outermost_node_name)
         record_total_time_metrics
         record_apdex unless ignore_apdex?
         record_queue_time
         distributed_tracer.record_metrics
+
+        NewRelic::Agent.logger.debug("#{Thread.current.object_id} WALUIGI Transaction#finish middle 3   guid: #{guid}")
 
         record_exceptions
         record_transaction_event
@@ -834,6 +850,13 @@ module NewRelic
       end
 
       def record_transaction_event
+        begin
+          NewRelic::Agent.logger.debug(
+            "#{Thread.current.object_id} WALUIGI Transaction#record_transaction_event  guid: #{guid}  name: #{best_name}    agent.transaction_event_recorder: #{agent.transaction_event_recorder.object_id}"
+          )
+        rescue => e
+          NewRelic::Agent.logger.warn(" #{Thread.current.object_id}- WALUIGI: Transaction#record_transaction_event ", e)
+        end
         agent.transaction_event_recorder.record(payload)
       end
 

@@ -75,6 +75,13 @@ module NewRelic
       end
 
       def harvest!
+        begin
+          NewRelic::Agent.logger.debug(
+            "#{Thread.current.object_id} WALUIGI EventAggregator#harvest! self: #{self.class} #{self.object_id}   buffer: #{@buffer.object_id}"
+          )
+        rescue => e
+          NewRelic::Agent.logger.warn(" #{Thread.current.object_id}- WALUIGI: EventAggregator#harvest! error ", e)
+        end
         metadata = nil
         samples = []
         @lock.synchronize do

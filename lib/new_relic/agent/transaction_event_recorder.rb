@@ -30,7 +30,7 @@ module NewRelic
 
           begin
             NewRelic::Agent.logger.debug(
-              "#{Thread.current.object_id} WALUIGI TransactionEventRecorder#record  SYNTHETICS  Payload:\n    " \
+              "#{Thread.current.object_id} WALUIGI TransactionEventRecorder#record  SYNTHETICS   self: #{self.object_id} aggregator: #{transaction_event_aggregator.object_id}  Payload:\n    " \
               "#{JSON.pretty_generate(event)}" \
               "------END PAYLOAD------------------------------------------------------------\n    "
             )
@@ -45,7 +45,7 @@ module NewRelic
 
           begin
             NewRelic::Agent.logger.debug(
-              "#{Thread.current.object_id} WALUIGI TransactionEventRecorder#record   Payload:\n    " \
+              "#{Thread.current.object_id} WALUIGI TransactionEventRecorder#record  self: #{self.object_id} aggregator: #{transaction_event_aggregator.object_id}   Payload:\n    " \
               "#{JSON.pretty_generate(event)}" \
               "------END PAYLOAD------------------------------------------------------------\n    "
             )
@@ -53,7 +53,7 @@ module NewRelic
             NewRelic::Agent.logger.warn(" #{Thread.current.object_id}- WALUIGI: TransactionEventRecorder#record error ", e)
           end
 
-          transaction_event_aggregator.record(priority: payload[:priority]) { event }
+          transaction_event_aggregator.record(priority: payload[:priority], event: event)
         end
       end
 

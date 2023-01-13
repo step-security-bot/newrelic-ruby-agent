@@ -17,6 +17,14 @@ module NewRelic
       buffer_class PrioritySampledBuffer
 
       def record(priority: nil, event: nil, &blk)
+        begin
+          NewRelic::Agent.logger.debug(
+            "#{Thread.current.object_id} WALUIGI TransactionEventAggregator#record   guid: #{event[0]['guid']}   name: #{event[0]['name']}     self: #{self.object_id}  buffer: #{@buffer.object_id}" \
+          )
+        rescue => e
+          NewRelic::Agent.logger.warn(" #{Thread.current.object_id}- WALUIGI: TransactionEventRecorder#record error ", e)
+        end
+
         unless event || priority && blk
           raise ArgumentError, "Expected priority and block, or event"
         end
