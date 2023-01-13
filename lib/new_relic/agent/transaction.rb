@@ -253,6 +253,15 @@ module NewRelic
         @ignore_enduser = options.fetch(:ignore_enduser, false)
         @ignore_trace = false
 
+        begin
+          NewRelic::Agent.logger.debug(
+            "#{Thread.current.object_id} WALUIGI Transaction#initialize  guid: #{@guid}\n    " \
+            "\t@ignore_this_transaction = #{@ignore_this_transaction}     @ignore_apdex = #{@ignore_apdex}    @ignore_enduser = #{@ignore_enduser}"
+          )
+        rescue => e
+          NewRelic::Agent.logger.warn(" #{Thread.current.object_id}- WALUIGI: Transaction#initialize error ", e)
+        end
+
         @sampled = nil
         @priority = nil
 
@@ -432,7 +441,20 @@ module NewRelic
         NewRelic::Agent.instance.events.notify(:start_transaction)
         NewRelic::Agent::TransactionTimeAggregator.transaction_start(start_time)
 
-        ignore! if user_defined_rules_ignore?
+        if user_defined_rules_ignore?
+          begin
+            rules = NewRelic::Agent.config[:"rules.ignore_url_regexes"]
+            NewRelic::Agent.logger.debug(
+              "#{Thread.current.object_id} WALUIGI Transaction#user_defined_rules_ignore? guid: #{guid}  name: #{best_name}   tracing_enabled?: #{state.is_execution_traced?}\n    " \
+              "\trequest_path: #{request_path}\n    " \
+              "\t#{rules.count} Rules:\n    " \
+              "\t\t#{rules.map { |rule| "#{rule.inspect}    #{request_path.match(rule)}" }.join("\n    \t\t")}\n    "
+            )
+          rescue => e
+            NewRelic::Agent.logger.warn(" #{Thread.current.object_id}- WALUIGI: Transaction#user_defined_rules_ignore? error ", e)
+          end
+          ignore!
+        end
 
         create_initial_segment(options)
         Segment.merge_untrusted_agent_attributes( \
@@ -524,7 +546,7 @@ module NewRelic
       def finish
         begin
           NewRelic::Agent.logger.debug(
-            "#{Thread.current.object_id} WALUIGI Transaction#finish guid: #{guid}  name: #{best_name}  tracing_enabled?: #{state.is_execution_traced?}\n    " \
+            "#{Thread.current.object_id} WALUIGI Transaction#finish guid: #{guid}  name: #{best_name}   ignored: #{@ignore_this_transaction}  tracing_enabled?: #{state.is_execution_traced?}   request_path: #{request_path}\n    " \
             "\tsegments.count: #{segments.count}  names: \n    \t\t#{segments.map { |s| "#{s.name} (#{s.guid})" }.join("\n    \t\t")} \n    " \
             "\t------END SEGMENT NAMES------\n"
           )
@@ -549,7 +571,24 @@ module NewRelic
 
         NewRelic::Agent::TransactionTimeAggregator.transaction_stop(@end_time, @starting_thread_id)
 
-        commit!(initial_segment.name) unless @ignore_this_transaction
+        unless @ignore_this_transaction
+          begin
+            NewRelic::Agent.logger.debug(
+              "#{Thread.current.object_id} WALUIGI Transaction#finish COMMIT guid: #{guid}  name: #{best_name}"
+            )
+          rescue => e
+            NewRelic::Agent.logger.warn(" #{Thread.current.object_id}- WALUIGI: Transaction#finish error COMMIT", e)
+          end
+          commit!(initial_segment.name)
+        else
+          begin
+            NewRelic::Agent.logger.debug(
+              "#{Thread.current.object_id} WALUIGI Transaction#finish COMMIT ELSE guid: #{guid}  name: #{best_name}  ignored: #{@ignore_this_transaction}  tracing_enabled?: #{state.is_execution_traced?}"
+            )
+          rescue => e
+            NewRelic::Agent.logger.warn(" #{Thread.current.object_id}- WALUIGI: Transaction#finish error COMMIT ELSE", e)
+          end
+        end
       rescue => e
         NewRelic::Agent.logger.error("Exception during Transaction#finish", e)
         nil
@@ -567,6 +606,14 @@ module NewRelic
       end
 
       def commit!(outermost_node_name)
+        begin
+          NewRelic::Agent.logger.debug(
+            "#{Thread.current.object_id} WALUIGI Transaction#commit begin guid: #{guid}  name: #{best_name}"
+          )
+        rescue => e
+          NewRelic::Agent.logger.warn(" #{Thread.current.object_id}- WALUIGI: Transaction#commit begin", e)
+        end
+
         generate_payload
         assign_intrinsics
 
@@ -586,6 +633,13 @@ module NewRelic
         record_log_events
         merge_metrics
         send_transaction_finished_event
+        begin
+          NewRelic::Agent.logger.debug(
+            "#{Thread.current.object_id} WALUIGI Transaction#commit end guid: #{guid}  name: #{best_name}"
+          )
+        rescue => e
+          NewRelic::Agent.logger.warn(" #{Thread.current.object_id}- WALUIGI: Transaction#commit end", e)
+        end
       end
 
       def assign_segment_dt_attributes
@@ -914,6 +968,17 @@ module NewRelic
       end
 
       def ignore!
+        begin
+          NewRelic::Agent.logger.debug(
+            "#{Thread.current.object_id} WALUIGI Transaction#ignore! guid: #{guid}  name: #{best_name}   tracing_enabled?: #{state.is_execution_traced?}\n    " \
+            "\t-------------------------------------------------------------------------------\n    " \
+            "\tCaller Locations: \n    \t\t#{caller_locations.join("\n    \t\t")} \n    " \
+            "\t------END CALLER LOCATIONS---------------------------------------------------\n    "
+          )
+        rescue => e
+          NewRelic::Agent.logger.warn(" #{Thread.current.object_id}- WALUIGI: Transaction#finish error ", e)
+        end
+
         @ignore_this_transaction = true
       end
 

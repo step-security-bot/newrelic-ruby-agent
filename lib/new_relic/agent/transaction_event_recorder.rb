@@ -5,6 +5,7 @@
 require 'new_relic/agent/transaction_event_aggregator'
 require 'new_relic/agent/synthetics_event_aggregator'
 require 'new_relic/agent/transaction_event_primitive'
+require 'json'
 
 module NewRelic
   module Agent
@@ -21,14 +22,38 @@ module NewRelic
       end
 
       def record(payload)
+        NewRelic::Agent.logger.debug("#{Thread.current.object_id} WALUIGI TransactionEventRecorder#record   EVENTS NOT ENABLED") if !NewRelic::Agent.config[:'transaction_events.enabled']
         return unless NewRelic::Agent.config[:'transaction_events.enabled']
 
         if synthetics_event?(payload)
           event = create_event(payload)
+
+          begin
+            NewRelic::Agent.logger.debug(
+              "#{Thread.current.object_id} WALUIGI TransactionEventRecorder#record  SYNTHETICS  Payload:\n    " \
+              "#{JSON.pretty_generate(event)}" \
+              "------END PAYLOAD------------------------------------------------------------\n    "
+            )
+          rescue => e
+            NewRelic::Agent.logger.warn(" #{Thread.current.object_id}- WALUIGI: TransactionEventRecorder#record SYNTHETICS error ", e)
+          end
+
           result = synthetics_event_aggregator.record(event)
           transaction_event_aggregator.record(event: event) if result.nil?
         else
-          transaction_event_aggregator.record(priority: payload[:priority]) { create_event(payload) }
+          event = create_event(payload)
+
+          begin
+            NewRelic::Agent.logger.debug(
+              "#{Thread.current.object_id} WALUIGI TransactionEventRecorder#record   Payload:\n    " \
+              "#{JSON.pretty_generate(event)}" \
+              "------END PAYLOAD------------------------------------------------------------\n    "
+            )
+          rescue => e
+            NewRelic::Agent.logger.warn(" #{Thread.current.object_id}- WALUIGI: TransactionEventRecorder#record error ", e)
+          end
+
+          transaction_event_aggregator.record(priority: payload[:priority]) { event }
         end
       end
 
