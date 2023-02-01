@@ -8,7 +8,8 @@ DependencyDetection.defer do
   named :action_dispatch
 
   depends_on do
-    !NewRelic::Agent.config[:disable_action_dispatch]
+    false
+    # !NewRelic::Agent.config[:disable_action_dispatch]
   end
 
   depends_on do
