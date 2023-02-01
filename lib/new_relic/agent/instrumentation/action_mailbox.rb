@@ -8,8 +8,7 @@ DependencyDetection.defer do
   named :action_mailbox
 
   depends_on do
-    false
-    # !NewRelic::Agent.config[:disable_action_mailbox]
+    !NewRelic::Agent.config[:disable_action_mailbox]
   end
 
   depends_on do
