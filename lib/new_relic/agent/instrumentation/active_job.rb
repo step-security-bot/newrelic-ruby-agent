@@ -8,7 +8,8 @@ DependencyDetection.defer do
   named :activejob
 
   depends_on do
-    defined?(ActiveJob::Base)
+    false
+    # defined?(ActiveJob::Base)
   end
 
   executes do

@@ -8,7 +8,8 @@ DependencyDetection.defer do
   named :active_support
 
   depends_on do
-    !NewRelic::Agent.config[:disable_active_support]
+    false
+    # !NewRelic::Agent.config[:disable_active_support]
   end
 
   depends_on do

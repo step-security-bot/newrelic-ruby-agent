@@ -9,15 +9,16 @@ DependencyDetection.defer do
   @name = :action_cable_notifications
 
   depends_on do
-    defined?(ActionCable::VERSION::MAJOR) &&
-      ActionCable::VERSION::MAJOR.to_i >= 5 &&
-      defined?(ActiveSupport)
+    false
+    # defined?(ActionCable::VERSION::MAJOR) &&
+    #   ActionCable::VERSION::MAJOR.to_i >= 5 &&
+    #   defined?(ActiveSupport)
   end
 
-  depends_on do
-    !NewRelic::Agent.config[:disable_action_cable_instrumentation] &&
-      !NewRelic::Agent::Instrumentation::ActionCableSubscriber.subscribed?
-  end
+  # depends_on do
+    # !NewRelic::Agent.config[:disable_action_cable_instrumentation] &&
+    #   !NewRelic::Agent::Instrumentation::ActionCableSubscriber.subscribed?
+  # end
 
   executes do
     NewRelic::Agent.logger.info('Installing notifications based Action Cable instrumentation')
