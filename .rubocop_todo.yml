@@ -91,10 +91,3 @@ Style/FetchEnvVar:
 Style/RedundantStringEscape:
   Exclude:
     - 'test/new_relic/agent/logging_test.rb'
-
-# Offense count: 115
-# This cop supports unsafe autocorrection (--autocorrect-all).
-# Configuration parameters: ConvertCodeThatCanStartToReturnNil, AllowedMethods, MaxChainLength.
-# AllowedMethods: present?, blank?, presence, try, try!
-Style/SafeNavigation:
-  Enabled: false
